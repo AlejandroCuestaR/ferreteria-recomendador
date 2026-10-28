@@ -55,9 +55,9 @@ cd backend
 pytest
 ```
 
-Siete pruebas: anti-sobreventa (incluido el rollback de una compra con varios
-productos) y el recomendador (asociación, filtro de stock, ocultar/impulsar y
-arranque en frío).
+Nueve pruebas: anti-sobreventa (rollback de una compra con varios productos y
+protección al eliminar un producto con ventas) y el recomendador (asociación,
+filtro de stock, ocultar, y arranque en frío).
 
 ### IA opcional
 

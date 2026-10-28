@@ -249,7 +249,7 @@ export function explainRecommendations(
   );
 }
 
-export function getRules(minCount = 1): Promise<Rule[]> {
+export function getRules(minCount = 2): Promise<Rule[]> {
   return request<Rule[]>(`/api/rules?min_count=${minCount}`);
 }
 

@@ -32,7 +32,7 @@ export default function RulesTab() {
   const loadData = useCallback(async () => {
     try {
       const [rulesData, overridesData] = await Promise.all([
-        getRules(1),
+        getRules(2),
         getOverrides(),
       ]);
       setRules(rulesData);
