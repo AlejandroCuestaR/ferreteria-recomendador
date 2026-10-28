@@ -88,8 +88,15 @@ def _association_candidates(model, sku, store=None) -> Dict[str, Dict]:
         confidence = c / a_count
         lift = (c * n) / (a_count * b_count) if b_count else 0.0
         store_c = model["store_pair"].get((store, a, b), 0) if store else 0
-        store_bonus = 1.0 + 0.5 * (1 if store_c > 0 else 0)
-        score = confidence * max(lift, 0.01) * store_bonus
+        # Bono por tienda PROPORCIONAL a la evidencia en esa tienda (satura en
+        # 1.5x): más co-ocurrencias del par en la tienda -> más bono, con
+        # rendimientos decrecientes. Una tienda con pocas ventas pesa poco.
+        store_bonus = 1.0 + 0.5 * (store_c / (store_c + 1))
+        # Shrinkage por evidencia: un par visto una sola vez no debe dominar por
+        # un lift inflado; se pondera por #co-ocurrencias, count/(count+1)
+        # (1 vez -> 0.5, 2 -> 0.67, 5 -> 0.83).
+        evidence = c / (c + 1)
+        score = confidence * max(lift, 0.01) * store_bonus * evidence
         out[b] = {
             "count": c,
             "support": round(support, 4),

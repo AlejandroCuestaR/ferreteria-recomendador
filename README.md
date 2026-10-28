@@ -146,9 +146,18 @@ Decidí un enfoque **híbrido y explicable**, no una caja negra:
    una **tienda sin historial**: **Mérida** no tiene ventas en el dataset, así
    que cae en las reglas globales y, si hace falta, en el respaldo por contenido.
 
-3. **Ponderación por tienda** (si el par también se compra junto en esa tienda,
-   el score sube un poco), **filtro de existencia** (solo recomienda con stock),
+3. **Ponderación por tienda** proporcional a la evidencia: el bono es
+   `1 + 0.5·(coocurrencias_en_la_tienda / (coocurrencias_en_la_tienda + 1))`
+   (satura en 1.5×), de modo que una tienda con pocas ventas del par pesa menos
+   que una con muchas. Más **filtro de existencia** (solo recomienda con stock)
    y **ajustes del negocio** (ocultar / impulsar un par).
+
+**Robustez con pocos datos:** como el histórico es chico (89 ventas), un par
+visto una sola vez puede dar un *lift* alto por azar. Por eso el **panel de
+relaciones** solo muestra pares con **≥2 co-ocurrencias** (`min_count`, 2 por
+defecto) y el **score** se pondera por evidencia con un *shrinkage*
+`count/(count+1)` (1 vez → 0.5, 2 → 0.67), para que un par raro no domine. Los
+productos sin pares fuertes caen al respaldo por contenido.
 
 ### ¿Cómo compruebo que las recomendaciones son buenas?
 
@@ -170,6 +179,15 @@ mejora es **conservadora**: aun con esa ventaja, el recomendador gana.
 > El hit-rate se mide sobre los productos-semilla que tienen señal de asociación
 > en el historial; un producto sin co-compras no entra en esta métrica (ahí
 > actúa el respaldo por contenido).
+>
+> La **evaluación es un cálculo bajo demanda** (reentrena dejando fuera cada
+> ticket); con 42 tickets es instantáneo. A escala se cachearía hasta que
+> entren ventas nuevas.
+>
+> Sobre `precision@3 = 0.14`: el techo es bajo **por diseño del dato** — los
+> tickets tienen 2–3 productos, así que si solo hay 1 producto-objetivo además
+> de la semilla, el máximo posible de precision@3 es 0.33. Por eso el
+> **hit-rate** y el **recall** describen mejor la utilidad aquí.
 
 ### Capa de IA (opcional, con respaldo)
 

@@ -236,7 +236,7 @@ def explain_recommendations(
 
 # --------------------------- relaciones / ajustes del negocio ---------------------------
 @app.get("/api/rules", response_model=List[schemas.RuleOut])
-def rules(min_count: int = 1, db: Session = Depends(get_db)):
+def rules(min_count: int = Query(2, ge=1, le=10), db: Session = Depends(get_db)):
     pbs = _products_by_sku(db)
     model, _ = _build_model(db)
     ov = _overrides_map(db)
