@@ -167,6 +167,10 @@ El modelo casi **duplica** el hit-rate de recomendar "lo más vendido". Además,
 la línea base se le da una ventaja a propósito (ve todos los tickets), así que la
 mejora es **conservadora**: aun con esa ventaja, el recomendador gana.
 
+> El hit-rate se mide sobre los productos-semilla que tienen señal de asociación
+> en el historial; un producto sin co-compras no entra en esta métrica (ahí
+> actúa el respaldo por contenido).
+
 ### Capa de IA (opcional, con respaldo)
 
 `POST /api/recommendations/{sku}/explain` arma una frase para el cajero del tipo

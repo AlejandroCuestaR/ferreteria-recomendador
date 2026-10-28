@@ -45,3 +45,19 @@ def test_compra_multiple_hace_rollback():
     )
     assert r.status_code == 409
     assert client.get("/api/products/SKU005").json()["stock"] == s_valido
+
+
+def test_eliminar_producto_con_ventas_devuelve_409():
+    # SKU001 tiene ventas en el historial -> no se borra en duro (integridad).
+    r = client.delete("/api/products/SKU001")
+    assert r.status_code == 409
+    assert client.get("/api/products/SKU001").status_code == 200  # sigue existiendo
+
+
+def test_crear_y_eliminar_producto_sin_ventas():
+    client.post("/api/products", json={
+        "sku": "ZZZ9", "nombre": "Producto temporal", "precio": 10.0, "stock": 5,
+    })
+    r = client.delete("/api/products/ZZZ9")
+    assert r.status_code == 204
+    assert client.get("/api/products/ZZZ9").status_code == 404

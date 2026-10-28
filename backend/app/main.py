@@ -5,6 +5,7 @@ de sobreventa, recomendaciones (con explicación opcional por IA) y un panel de
 relaciones que el negocio puede ver y ajustar, más un endpoint de evaluación.
 """
 import time
+import uuid
 from contextlib import asynccontextmanager
 from datetime import date
 from typing import List, Optional
@@ -114,6 +115,13 @@ def delete_product(sku: str, db: Session = Depends(get_db)):
     p = db.get(models.Product, sku)
     if not p:
         raise HTTPException(404, "Producto no encontrado")
+    # Integridad referencial: un producto con ventas no se borra en duro.
+    if db.query(models.Sale).filter_by(sku=sku).first():
+        raise HTTPException(
+            409,
+            f"No se puede eliminar {sku}: tiene ventas registradas "
+            "(en producción sería un archivado / soft delete).",
+        )
     db.delete(p)
     db.commit()
 
@@ -134,7 +142,7 @@ def purchase(req: schemas.PurchaseRequest, db: Session = Depends(get_db)):
     if not db.query(models.Store).filter_by(nombre=req.tienda).first():
         raise HTTPException(400, f"Tienda desconocida: {req.tienda}")
 
-    ticket_id = f"P{int(time.time() * 1000)}"
+    ticket_id = f"P{int(time.time() * 1000)}{uuid.uuid4().hex[:4].upper()}"
     fecha = date.today().isoformat()
     lineas = []
     total = 0.0
@@ -187,6 +195,8 @@ def recommendations(
     pbs = _products_by_sku(db)
     if sku not in pbs:
         raise HTTPException(404, "Producto no encontrado")
+    if store is not None and not db.query(models.Store).filter_by(nombre=store).first():
+        raise HTTPException(400, f"Tienda desconocida: {store}")
     model, _ = _build_model(db)
     recs = recommender.recommend(model, pbs, sku, store, k=k, overrides=_overrides_map(db))
     items = [
