@@ -1,0 +1,20 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/.pytest_cache/
+backend/ferreteria.db
+
+# Variables de entorno (NUNCA subir la API key)
+.env
+backend/.env
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# Sistema
+.DS_Store
+Thumbs.db

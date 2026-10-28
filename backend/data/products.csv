@@ -1,0 +1,29 @@
+sku,nombre,descripcion,categoria,material,uso_recomendado,precio,stock
+SKU001,Soplete de gas MAPP,Soplete portátil para soldadura y corte menor con cartucho de gas,herramienta,acero y latón,soldadura y corte menor,450,15
+SKU002,Varilla de soldar estaño 60/40,Varilla de aporte para soldadura de baja temperatura,consumible,estaño-plomo,soldadura eléctrica y electrónica,80,40
+SKU003,Varilla de soldar plata,Varilla de aporte para uniones de alta resistencia mecánica,consumible,aleación de plata,soldadura de alta resistencia,220,10
+SKU004,Cartucho de gas MAPP,Cartucho de gas combustible de repuesto para soplete,consumible,gas MAPP,combustible para soplete,120,30
+SKU005,Tornillo acero al carbón 1/4 (caja 100),Tornillería estándar sin recubrimiento,fijación,acero al carbón,interior,60,200
+SKU006,Tornillo acero galvanizado 1/4 (caja 100),Tornillería con recubrimiento de zinc anticorrosivo,fijación,acero galvanizado,exterior con humedad moderada,95,150
+SKU007,Tornillo acero inoxidable 316 1/4 (caja 100),Tornillería de máxima resistencia a la corrosión salina,fijación,acero inoxidable 316,exterior costero y ambientes salinos,180,80
+SKU008,Lámina galvanizada calibre 24,Lámina de acero con recubrimiento de zinc,material,acero galvanizado,exterior,350,40
+SKU009,Lámina acero al carbón calibre 24,Lámina de acero sin recubrimiento,material,acero al carbón,interior,280,60
+SKU010,Tubo PVC cédula 40 3/4,Tubería rígida para conducción de agua fría,plomería,PVC,interior y exterior protegido de la luz solar,45,300
+SKU011,Tubo CPVC estabilizado UV 3/4,Tubería rígida con protección contra radiación solar,plomería,CPVC estabilizado UV,exterior con exposición solar directa,90,60
+SKU012,Cemento para PVC 250ml,Adhesivo solvente para unión de tubería rígida,consumible,solvente-resina,pegado de tubería PVC y CPVC,65,100
+SKU013,Sellador de silicón,Sellador flexible resistente a humedad,consumible,silicón,sellado de juntas,55,120
+SKU014,Pintura anticorrosiva,Recubrimiento protector para metal expuesto a humedad,pintura,base alquidálica,metal en exterior con humedad,320,50
+SKU015,Pintura vinílica interior,Recubrimiento mate para muros interiores,pintura,vinil acrílico,interior,210,90
+SKU016,Pintura esmalte resistente UV,Esmalte con protección contra radiación solar directa,pintura,esmalte acrílico UV,exterior con exposición solar directa,280,45
+SKU017,Taladro percutor 1/2,Taladro eléctrico con función de percusión,herramienta eléctrica,acero y plástico ABS,perforación de mampostería y metal,1200,20
+SKU018,Broca para concreto 1/4,Broca con punta de widia para mampostería,consumible,widia,perforación de concreto y mampostería,40,150
+SKU019,Broca para metal 1/4,Broca de acero rápido para perforación de metal,consumible,acero rápido HSS,perforación de metal,55,100
+SKU020,Careta de soldar,Protección facial con visor oscurecido para soldadura,EPP,policarbonato,protección facial en soldadura,380,25
+SKU021,Guantes de carnaza,Guantes de protección térmica y mecánica,EPP,carnaza,protección de manos en trabajo pesado,150,60
+SKU022,Cable eléctrico calibre 12 rollo 100m,Cable de cobre con forro para instalación fija,eléctrico,cobre con forro THHW,interior,890,30
+SKU023,Cable eléctrico uso rudo rollo 100m,Cable de cobre con forro reforzado para intemperie,eléctrico,cobre con forro uso rudo,exterior con humedad y sol,1150,20
+SKU024,Candado acero al carbón,Candado de arco estándar,seguridad,acero al carbón,interior,90,70
+SKU025,Candado acero inoxidable marino,Candado de arco resistente a corrosión salina,seguridad,acero inoxidable marino,exterior costero y ambientes salinos,210,30
+SKU026,Manguera de repuesto para soplete,Manguera flexible de conexión para equipo de soldadura,consumible,caucho reforzado,repuesto para soplete,150,15
+SKU027,Regulador de presión para gas MAPP,Regulador de flujo para cartucho de gas combustible,herramienta,latón,control de presión en soldadura,300,8
+SKU028,Grasa dieléctrica,Grasa aislante para protección de conexiones eléctricas,consumible,silicona dieléctrica,protección de conexiones eléctricas en exterior,70,40
