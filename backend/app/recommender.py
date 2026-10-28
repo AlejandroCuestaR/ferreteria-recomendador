@@ -10,13 +10,17 @@ Enfoque HÍBRIDO y explicable (el "cómo" es parte central de lo que evalúan):
    Son interpretables: el negocio ve POR QUÉ se relacionan dos productos y
    puede ajustarlo.
 
-2) Respaldo por contenido (content-based) para arranque en frío: productos
-   nuevos sin historial (p. ej. SKU027) o la tienda Mérida (sin ventas en el
-   dataset). Se relacionan por coincidencia de `uso_recomendado` / `material`.
+2) Respaldo por contenido (content-based) para arranque en frío de PRODUCTO:
+   un SKU sin co-compras en el historial (p. ej. SKU027) se relaciona por
+   coincidencia de `uso_recomendado` / `material`.
 
-Siempre se filtra por existencia (stock > 0) y se aplican los ajustes del
-negocio (ocultar / impulsar). La tienda pondera: si el par también se compra
-junto EN ESA tienda, recibe un pequeño bono.
+Arranque en frío de TIENDA: una tienda sin historial (p. ej. Mérida) no tiene
+señal propia, así que usa las reglas de asociación GLOBALES (y, si el seed
+tampoco tiene historial global, el respaldo por contenido).
+
+En los endpoints se filtra por existencia (stock > 0) y se aplican los ajustes
+del negocio (ocultar / impulsar). La tienda pondera: si el par también se
+compra junto EN ESA tienda, el score recibe un pequeño bono.
 """
 import math
 import re
@@ -124,10 +128,13 @@ def recommend(
     store: Optional[str] = None,
     k: int = 5,
     overrides: Optional[Dict[Tuple[str, str], Tuple[str, float]]] = None,
+    enforce_stock: bool = True,
 ) -> List[Dict]:
     """Devuelve hasta k recomendaciones para `sku` en `store`.
 
     overrides: {(a, b): (action, weight)} con action in {'hide', 'boost'}.
+    enforce_stock: en los endpoints va True (solo con existencia); la
+    evaluación offline lo pone en False para no penalizar aciertos agotados.
     Primero reglas de asociación; si faltan, se completa con content-based.
     """
     overrides = overrides or {}
@@ -136,7 +143,7 @@ def recommend(
     recs: List[Dict] = []
     for b, m in assoc.items():
         p = products_by_sku.get(b)
-        if p is None or p.stock <= 0:  # solo con existencia
+        if p is None or (enforce_stock and p.stock <= 0):  # solo con existencia
             continue
         ov = overrides.get((sku, b))
         if ov and ov[0] == "hide":
@@ -160,7 +167,7 @@ def recommend(
             if b in taken:
                 continue
             p = products_by_sku.get(b)
-            if p is None or p.stock <= 0:
+            if p is None or (enforce_stock and p.stock <= 0):
                 continue
             ov = overrides.get((sku, b))
             if ov and ov[0] == "hide":
@@ -214,12 +221,14 @@ def evaluate(baskets, products_by_sku, k: int = 3) -> Dict:
     ticket aparece en la recomendación. Se compara contra una línea base de
     popularidad (recomendar los k más vendidos).
     """
-    # Popularidad global (línea base).
+    # Popularidad global (#tickets que contienen cada SKU). A propósito la
+    # línea base VE todos los tickets (ventaja optimista): si aun con esa
+    # ventaja el modelo la supera, la mejora es conservadora y creíble.
     pop = defaultdict(int)
     for _, _, skus in baskets:
         for s in skus:
             pop[s] += 1
-    popular_order = [s for s, _ in sorted(pop.items(), key=lambda x: -x[1])]
+    popular_order = sorted(pop, key=lambda s: -pop[s])
 
     hits = trials = 0
     base_hits = 0
@@ -231,7 +240,8 @@ def evaluate(baskets, products_by_sku, k: int = 3) -> Dict:
         model = build_model(baskets, exclude_ticket=tid)
         for seed in skus:
             targets = set(skus) - {seed}
-            recs = recommend(model, products_by_sku, seed, store, k=k, overrides={})
+            recs = recommend(model, products_by_sku, seed, store, k=k,
+                             overrides={}, enforce_stock=False)
             rec_skus = [r["sku"] for r in recs if r["reason"] == "comprados_juntos"]
             if not rec_skus:
                 continue  # sin señal de asociación para esta semilla
@@ -254,8 +264,9 @@ def evaluate(baskets, products_by_sku, k: int = 3) -> Dict:
         "recall_at_k": round(rec_sum / trials, 4) if trials else 0.0,
         "baseline_popularity_hit_rate": round(base_hits / trials, 4) if trials else 0.0,
         "nota": (
-            "Leave-one-ticket-out: el modelo se re-entrena sin el ticket "
-            "evaluado para no hacer trampa. El hit-rate debe superar a la "
-            "línea base de popularidad para demostrar valor real."
+            "Leave-one-ticket-out: el MODELO se re-entrena sin el ticket "
+            "evaluado (sin fuga). La línea base de popularidad ve todos los "
+            "tickets (ventaja optimista): aun así el modelo la supera, por lo "
+            "que la mejora es conservadora y creíble."
         ),
     }

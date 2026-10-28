@@ -98,7 +98,7 @@ class OverrideCreate(BaseModel):
     sku_a: str
     sku_b: str
     action: str  # 'hide' | 'boost'
-    weight: float = 2.0
+    weight: float = Field(default=2.0, gt=0)
 
 
 class OverrideOut(OverrideCreate):

@@ -13,6 +13,7 @@ explicación por plantilla a partir de los mismos datos. Así el proyecto
 arranca sin configurar nada, y la IA es un plus que se activa con una env var.
 """
 import os
+import time
 
 import httpx
 
@@ -48,23 +49,33 @@ def explain(seed_nombre: str, recomendados: list) -> dict:
         f"a quien compra «{seed_nombre}». Productos sugeridos: {lista}. "
         "No inventes productos fuera de la lista."
     )
-    try:
-        resp = httpx.post(
-            f"{base}/chat/completions",
-            headers={"Authorization": f"Bearer {key}"},
-            json={
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.4,
-                "max_tokens": 160,
-            },
-            timeout=20.0,
-        )
-        resp.raise_for_status()
-        texto = resp.json()["choices"][0]["message"]["content"].strip()
-        return {"texto": texto, "fuente": model}
-    except Exception as exc:  # fallback robusto: nunca romper la POC
-        return {
-            "texto": _template(seed_nombre, recomendados),
-            "fuente": f"plantilla (fallo LLM: {exc.__class__.__name__})",
-        }
+    # Hasta 3 intentos: los proveedores gratuitos devuelven 429/503 por picos
+    # de demanda. Si aun así falla, se degrada a la plantilla local.
+    ultimo_error = "desconocido"
+    for intento in range(3):
+        try:
+            resp = httpx.post(
+                f"{base}/chat/completions",
+                headers={"Authorization": f"Bearer {key}"},
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.4,
+                    "max_tokens": 160,
+                },
+                timeout=25.0,
+            )
+            if resp.status_code in (429, 500, 502, 503, 504):
+                ultimo_error = f"HTTP {resp.status_code}"
+                time.sleep(1.5)
+                continue
+            resp.raise_for_status()
+            texto = resp.json()["choices"][0]["message"]["content"].strip()
+            return {"texto": texto, "fuente": model}
+        except Exception as exc:  # red/timeout/parseo: reintentar o degradar
+            ultimo_error = exc.__class__.__name__
+            time.sleep(1.0)
+    return {
+        "texto": _template(seed_nombre, recomendados),
+        "fuente": f"plantilla (LLM no disponible: {ultimo_error})",
+    }

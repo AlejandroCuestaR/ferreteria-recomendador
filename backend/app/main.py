@@ -5,10 +5,11 @@ de sobreventa, recomendaciones (con explicación opcional por IA) y un panel de
 relaciones que el negocio puede ver y ajustar, más un endpoint de evaluación.
 """
 import time
+from contextlib import asynccontextmanager
 from datetime import date
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -17,20 +18,9 @@ from . import llm, models, recommender, schemas
 from .database import Base, SessionLocal, engine, get_db
 from .seed import seed
 
-app = FastAPI(title="Ferretería · Recomendador", version="1.0.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-def _startup():
-    """Crea las tablas y siembra la base si está vacía (arranque directo)."""
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Al arrancar: crea las tablas y siembra la base si está vacía."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -39,6 +29,18 @@ def _startup():
         db.close()
     if empty:
         seed(reset=False)
+    yield
+
+
+app = FastAPI(title="Ferretería · Recomendador", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # --------------------------- helpers ---------------------------
@@ -147,6 +149,7 @@ def purchase(req: schemas.PurchaseRequest, db: Session = Depends(get_db)):
                 {"q": it.cantidad, "sku": it.sku},
             )
             if res.rowcount == 0:
+                db.refresh(p)  # stock real (pudo bajar por una línea previa)
                 raise HTTPException(
                     409,
                     f"Stock insuficiente para {it.sku} ({p.nombre}): "
@@ -163,7 +166,7 @@ def purchase(req: schemas.PurchaseRequest, db: Session = Depends(get_db)):
                 tienda=req.tienda, fecha=fecha, origen="poc",
             ))
         db.commit()
-    except HTTPException:
+    except Exception:
         db.rollback()
         raise
 
@@ -178,7 +181,7 @@ def purchase(req: schemas.PurchaseRequest, db: Session = Depends(get_db)):
 def recommendations(
     sku: str,
     store: Optional[str] = None,
-    k: int = 5,
+    k: int = Query(5, gt=0, le=50),
     db: Session = Depends(get_db),
 ):
     pbs = _products_by_sku(db)
@@ -204,7 +207,7 @@ def recommendations(
 def explain_recommendations(
     sku: str,
     store: Optional[str] = None,
-    k: int = 5,
+    k: int = Query(5, gt=0, le=50),
     db: Session = Depends(get_db),
 ):
     """Explicación en lenguaje natural del combo (IA opcional con fallback)."""
@@ -249,6 +252,8 @@ def list_overrides(db: Session = Depends(get_db)):
 def create_override(payload: schemas.OverrideCreate, db: Session = Depends(get_db)):
     if payload.action not in ("hide", "boost"):
         raise HTTPException(400, "action debe ser 'hide' o 'boost'")
+    if not db.get(models.Product, payload.sku_a) or not db.get(models.Product, payload.sku_b):
+        raise HTTPException(404, "sku_a o sku_b no existe")
     existing = (
         db.query(models.RuleOverride)
         .filter_by(sku_a=payload.sku_a, sku_b=payload.sku_b)
@@ -278,7 +283,7 @@ def delete_override(oid: int, db: Session = Depends(get_db)):
 
 # --------------------------- evaluación ---------------------------
 @app.get("/api/evaluation", response_model=schemas.EvaluationResult)
-def evaluation(k: int = 3, db: Session = Depends(get_db)):
+def evaluation(k: int = Query(3, gt=0, le=50), db: Session = Depends(get_db)):
     pbs = _products_by_sku(db)
     _, baskets = _build_model(db)
     return recommender.evaluate(baskets, pbs, k=k)
